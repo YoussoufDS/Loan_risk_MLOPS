@@ -12,6 +12,7 @@ import mlflow.sklearn
 from mlflow.tracking import MlflowClient
 
 from src.preprocessing import feature_engineering, apply_encoders, apply_scaler
+from src.ensemble import WeightedEnsemble  # noqa: F401 — required for joblib deserialization
 from src.evaluate import shap_top_features
 from src.utils import load_config, load_artifact, ROOT
 
@@ -26,9 +27,19 @@ def get_cfg():
 
 
 def load_model_from_registry(registry_name: str, stage: str = "Production"):
-    """Load model from MLflow Model Registry."""
+    """Load model from MLflow Model Registry.
+    Skips registry if tracking URI is SQLite (CI/local without server).
+    """
+    import os
     cfg = get_cfg()
-    mlflow.set_tracking_uri(cfg["mlflow"]["tracking_uri"])
+    tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", cfg["mlflow"]["tracking_uri"])
+
+    # Skip registry entirely if using SQLite — no server available
+    if tracking_uri.startswith("sqlite://"):
+        logger.info(f"SQLite tracking URI detected — skipping MLflow Registry, using local joblib.")
+        return None, None
+
+    mlflow.set_tracking_uri(tracking_uri)
     client = MlflowClient()
 
     try:
