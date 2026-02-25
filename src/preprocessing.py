@@ -40,6 +40,7 @@ def feature_engineering(df: pd.DataFrame) -> pd.DataFrame:
         df["AppMonth"]   = pd.to_datetime(df["ApplicationDate"]).dt.month
         df["AppQuarter"] = pd.to_datetime(df["ApplicationDate"]).dt.quarter
         df["AppDayOfWeek"] = pd.to_datetime(df["ApplicationDate"]).dt.dayofweek
+        df.drop(columns=["ApplicationDate"], inplace=True)  # remove string col
 
     return df
 
