@@ -138,7 +138,14 @@ def full_evaluation_report(
     output_dir: str = "reports/",
 ) -> dict:
     """Run regression evaluation and generate plots."""
+    # Force relative path from project root to avoid Windows absolute paths on Linux runners
     output_dir = Path(output_dir)
+    if output_dir.is_absolute():
+        try:
+            from src.utils import ROOT
+            output_dir = output_dir.relative_to(ROOT)
+        except ValueError:
+            output_dir = Path("reports")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # ── Regression ──
@@ -177,6 +184,12 @@ def full_evaluation_report_clf(
 ) -> dict:
     """Run classification evaluation and generate plots."""
     output_dir = Path(output_dir)
+    if output_dir.is_absolute():
+        try:
+            from src.utils import ROOT
+            output_dir = output_dir.relative_to(ROOT)
+        except ValueError:
+            output_dir = Path("reports")
     output_dir.mkdir(parents=True, exist_ok=True)
 
     clf_pred  = (clf_model.predict(X_test) >= 0.5).astype(int)

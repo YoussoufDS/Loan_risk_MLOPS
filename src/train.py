@@ -87,8 +87,16 @@ def log_and_register(
     mlflow.log_metrics(metrics)
 
     for artifact_path in artifacts.values():
-        if Path(artifact_path).exists():
-            mlflow.log_artifact(artifact_path)
+        if artifact_path is None:
+            continue
+        # Convertir en Path absolu depuis ROOT (évite les chemins Windows sur Linux)
+        p = Path(artifact_path)
+        if not p.is_absolute():
+            p = ROOT / p
+        if p.exists():
+            mlflow.log_artifact(str(p))
+        else:
+            logger.warning(f"Artifact not found, skipping: {p}")
 
     # Infer signature for schema validation at inference
     signature = infer_signature(X_sample, model.predict(X_sample))
