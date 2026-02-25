@@ -49,6 +49,8 @@ jobs:
 
       # Démarrer l'API et vérifier
       - name: 🔍 API health check
+        env:
+          MLFLOW_TRACKING_URI: "sqlite:///mlruns/mlflow.db"
         run: |
           uvicorn api.main:app --host 0.0.0.0 --port 8000 &
           API_PID=$!
