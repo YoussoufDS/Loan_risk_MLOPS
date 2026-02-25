@@ -1,0 +1,66 @@
+project:
+  name: "loan-risk-mlops"
+  version: "1.0.0"
+
+data:
+  raw_path: "data/raw/Loan.csv"
+  processed_path: "data/processed/"
+  reference_path: "data/reference/"
+  # Nested split ratios (resolve contamination problem)
+  split:
+    train: 0.60
+    val_early_stop: 0.10   # Val A — early stopping only
+    val_optuna: 0.10        # Val B — Optuna objective only
+    val_hill_climb: 0.10    # Val C — ensemble weights only
+    test: 0.10              # Final evaluation — touched once
+  random_state: 42
+
+features:
+  target_regression: "RiskScore"
+  target_classification: "LoanApproved"
+  drop_cols: ["ApplicationDate"]
+  ordinal_cols: ["EmploymentStatus"]
+  ordinal_categories:
+    EmploymentStatus: ["Employed", "Self-Employed", "Unemployed"]
+  onehot_cols:
+    - "EducationLevel"
+    - "MaritalStatus"
+    - "HomeOwnershipStatus"
+    - "LoanPurpose"
+    - "NumberOfDependents"
+  numerical_threshold_cat: 8
+
+training:
+  optuna_trials: 100
+  optuna_timeout: 3600        # 1h max
+  optuna_db: "sqlite:///mlruns/optuna_study.db"
+  hill_climb_max_models: 1000
+  hill_climb_tol: 1e-5
+  hill_climb_negative_weights: true
+  early_stopping_rounds: 100
+  cv_folds: 5
+
+mlflow:
+  tracking_uri: "http://localhost:5000"
+  experiment_regression: "loan-risk-regression"
+  experiment_classification: "loan-approval-classification"
+  model_registry_regression: "LoanRiskRegressor"
+  model_registry_classification: "LoanApprovalClassifier"
+  auto_promote_threshold: 0.01   # promote if RMSE improves by >1%
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+  reload: true
+  shap_top_n: 5
+
+drift:
+  psi_threshold: 0.2
+  pvalue_threshold: 0.05
+  rolling_window_days: 7
+  rmse_degradation_threshold: 0.05   # 5% degradation triggers retrain
+
+streamlit:
+  api_base_url: "http://localhost:8000"
+  mlflow_tracking_uri: "http://localhost:5000"
+  page_title: "Loan Risk Monitor"

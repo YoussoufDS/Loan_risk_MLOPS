@@ -1,0 +1,66 @@
+name: 🚀 Train Models
+
+on:
+  workflow_dispatch:           # Manuel — bouton GitHub
+    inputs:
+      data_path:
+        description: "Chemin vers le CSV (relatif au repo)"
+        default: "data/raw/Loan.csv"
+        required: false
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "config.yaml"
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: 📦 Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: 🔧 Create directories
+        run: mkdir -p data/raw data/processed data/reference models/artifacts reports mlruns logs
+
+      # If data is stored in GitHub Releases or passed as artifact
+      - name: 📊 Download dataset (if not in repo)
+        run: |
+          if [ ! -f "${{ github.event.inputs.data_path || 'data/raw/Loan.csv' }}" ]; then
+            echo "Dataset not found — please upload it to data/raw/Loan.csv"
+            exit 1
+          fi
+
+      - name: 🚂 Run training pipeline
+        run: |
+          python -m src.train \
+            --data "${{ github.event.inputs.data_path || 'data/raw/Loan.csv' }}" \
+            --trigger "github_actions_manual"
+        env:
+          MLFLOW_TRACKING_URI: "sqlite:///mlruns/mlflow.db"
+
+      - name: 📤 Upload models as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-models-${{ github.run_number }}
+          path: |
+            models/
+            reports/
+            mlruns/
+          retention-days: 30
+
+      - name: ✅ Training summary
+        run: |
+          echo "Training complete — Run #${{ github.run_number }}"
+          ls -lh models/

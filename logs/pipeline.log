@@ -1,0 +1,158 @@
+2026-02-24 22:53:25.048 | INFO     | __main__:train:151 - STEP 1/6 — Preprocessing
+2026-02-24 22:53:25.054 | INFO     | src.preprocessing:run_preprocessing:190 - ============================================================
+2026-02-24 22:53:25.054 | INFO     | src.preprocessing:run_preprocessing:191 - PREPROCESSING PIPELINE START
+2026-02-24 22:53:25.054 | INFO     | src.preprocessing:run_preprocessing:192 - ============================================================
+2026-02-24 22:53:25.189 | INFO     | src.preprocessing:run_preprocessing:196 - Loaded dataset: 20000 rows × 36 cols
+2026-02-24 22:53:25.506 | INFO     | src.preprocessing:run_preprocessing:202 - Reference snapshot saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\data\reference\reference_snapshot.parquet
+2026-02-24 22:53:25.536 | INFO     | src.preprocessing:run_preprocessing:210 - Feature engineering done
+2026-02-24 22:53:25.536 | INFO     | src.preprocessing:run_preprocessing:213 - Nested 5-partition split:
+2026-02-24 22:53:25.565 | INFO     | src.preprocessing:nested_split:75 -   Split train   : 11999 rows (60.0%)
+2026-02-24 22:53:25.565 | INFO     | src.preprocessing:nested_split:75 -   Split val_a   :  2000 rows (10.0%)
+2026-02-24 22:53:25.565 | INFO     | src.preprocessing:nested_split:75 -   Split val_b   :  2000 rows (10.0%)
+2026-02-24 22:53:25.565 | INFO     | src.preprocessing:nested_split:75 -   Split val_c   :  2001 rows (10.0%)
+2026-02-24 22:53:25.567 | INFO     | src.preprocessing:nested_split:75 -   Split test    :  2000 rows (10.0%)
+2026-02-24 22:53:25.586 | INFO     | src.preprocessing:fit_encoders:115 - OrdinalEncoder fit on: ['EmploymentStatus']
+2026-02-24 22:53:25.593 | INFO     | src.preprocessing:fit_encoders:123 - OneHotEncoder fit on: ['EducationLevel', 'MaritalStatus', 'HomeOwnershipStatus', 'LoanPurpose', 'NumberOfDependents']
+2026-02-24 22:53:25.672 | INFO     | src.preprocessing:fit_scaler:150 - StandardScaler fit on 55 numerical columns
+2026-02-24 22:53:25.726 | DEBUG    | src.utils:save_artifact:28 - Artifact saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\models\artifacts\encoders.joblib
+2026-02-24 22:53:25.729 | DEBUG    | src.utils:save_artifact:28 - Artifact saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\models\artifacts\scaler.joblib
+2026-02-24 22:53:25.729 | DEBUG    | src.utils:save_artifact:28 - Artifact saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\models\artifacts\num_cols.joblib
+2026-02-24 22:53:25.972 | INFO     | src.preprocessing:run_preprocessing:254 - Processed splits saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\data\processed
+2026-02-24 22:53:25.993 | INFO     | src.preprocessing:run_preprocessing:268 - PREPROCESSING COMPLETE
+2026-02-24 22:53:28.832 | INFO     | __main__:train:183 - STEP 2/6 — Optuna regression (Val-B)
+2026-02-24 22:59:01.427 | INFO     | api.predict:get_models:64 - Loading models into cache...
+2026-02-24 22:59:03.594 | WARNING  | api.predict:load_model_from_registry:44 - MLflow Registry unavailable (RESOURCE_DOES_NOT_EXIST: Registered Model with name=LoanRiskRegressor not found). Falling back to local joblib.
+2026-02-24 22:59:03.618 | WARNING  | api.predict:load_model_from_registry:44 - MLflow Registry unavailable (RESOURCE_DOES_NOT_EXIST: Registered Model with name=LoanApprovalClassifier not found). Falling back to local joblib.
+2026-02-24 23:00:33.199 | INFO     | src.optimize:run_optuna:120 - Optuna [regression] best value: 2.30751
+2026-02-24 23:00:33.204 | INFO     | src.optimize:run_optuna:121 - Best params: {'lgb_n_estimators': 2500, 'lgb_lr': 0.01647477394109053, 'lgb_depth': 7, 'lgb_leaves': 59, 'lgb_min_child': 33, 'lgb_subsample': 0.6831809216468459, 'lgb_colsample': 0.728034992108518, 'lgb_alpha': 0.8431013932082461, 'lgb_lambda': 0.0009962513222055108}
+2026-02-24 23:00:33.206 | INFO     | __main__:train:190 - STEP 3/6 — Train final regressors
+2026-02-24 23:00:33.210 | INFO     | src.optimize:train_final_regressors:138 - Training LightGBM regressor...
+2026-02-24 23:00:34.845 | INFO     | src.optimize:train_final_regressors:154 - Training XGBoost regressor...
+2026-02-24 23:00:47.865 | INFO     | src.optimize:train_final_regressors:165 - Training CatBoost regressor...
+2026-02-24 23:01:04.860 | INFO     | __main__:train:196 - STEP 4/6 — Hill Climbing weights (Val-C)
+2026-02-24 23:01:04.945 | INFO     | src.optimize:hill_climbing_weights:267 -   Single model [lgb]: score = 2.33365
+2026-02-24 23:01:04.946 | INFO     | src.optimize:hill_climbing_weights:267 -   Single model [xgb]: score = 2.26332
+2026-02-24 23:01:04.946 | INFO     | src.optimize:hill_climbing_weights:267 -   Single model [cat]: score = 2.23211
+2026-02-24 23:01:04.946 | INFO     | src.optimize:hill_climbing_weights:272 - Best single model: cat (score=2.23211)
+2026-02-24 23:05:53.242 | INFO     | __main__:train:151 - STEP 1/6 — Preprocessing
+2026-02-24 23:05:53.251 | INFO     | src.preprocessing:run_preprocessing:190 - ============================================================
+2026-02-24 23:05:53.252 | INFO     | src.preprocessing:run_preprocessing:191 - PREPROCESSING PIPELINE START
+2026-02-24 23:05:53.253 | INFO     | src.preprocessing:run_preprocessing:192 - ============================================================
+2026-02-24 23:05:53.466 | INFO     | src.preprocessing:run_preprocessing:196 - Loaded dataset: 20000 rows × 36 cols
+2026-02-24 23:05:53.705 | INFO     | src.preprocessing:run_preprocessing:202 - Reference snapshot saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\data\reference\reference_snapshot.parquet
+2026-02-24 23:05:53.741 | INFO     | src.preprocessing:run_preprocessing:210 - Feature engineering done
+2026-02-24 23:05:53.742 | INFO     | src.preprocessing:run_preprocessing:213 - Nested 5-partition split:
+2026-02-24 23:05:53.776 | INFO     | src.preprocessing:nested_split:75 -   Split train   : 11999 rows (60.0%)
+2026-02-24 23:05:53.777 | INFO     | src.preprocessing:nested_split:75 -   Split val_a   :  2000 rows (10.0%)
+2026-02-24 23:05:53.777 | INFO     | src.preprocessing:nested_split:75 -   Split val_b   :  2000 rows (10.0%)
+2026-02-24 23:05:53.777 | INFO     | src.preprocessing:nested_split:75 -   Split val_c   :  2001 rows (10.0%)
+2026-02-24 23:05:53.777 | INFO     | src.preprocessing:nested_split:75 -   Split test    :  2000 rows (10.0%)
+2026-02-24 23:05:53.802 | INFO     | src.preprocessing:fit_encoders:115 - OrdinalEncoder fit on: ['EmploymentStatus']
+2026-02-24 23:05:53.809 | INFO     | src.preprocessing:fit_encoders:123 - OneHotEncoder fit on: ['EducationLevel', 'MaritalStatus', 'HomeOwnershipStatus', 'LoanPurpose', 'NumberOfDependents']
+2026-02-24 23:05:53.898 | INFO     | src.preprocessing:fit_scaler:150 - StandardScaler fit on 55 numerical columns
+2026-02-24 23:05:53.964 | DEBUG    | src.utils:save_artifact:28 - Artifact saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\models\artifacts\encoders.joblib
+2026-02-24 23:05:53.967 | DEBUG    | src.utils:save_artifact:28 - Artifact saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\models\artifacts\scaler.joblib
+2026-02-24 23:05:53.967 | DEBUG    | src.utils:save_artifact:28 - Artifact saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\models\artifacts\num_cols.joblib
+2026-02-24 23:05:54.234 | INFO     | src.preprocessing:run_preprocessing:254 - Processed splits saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\data\processed
+2026-02-24 23:05:54.259 | INFO     | src.preprocessing:run_preprocessing:268 - PREPROCESSING COMPLETE
+2026-02-24 23:05:56.804 | INFO     | __main__:train:183 - STEP 2/6 — Optuna regression (Val-B)
+2026-02-24 23:09:51.231 | INFO     | src.optimize:run_optuna:120 - Optuna [regression] best value: 2.30751
+2026-02-24 23:09:51.236 | INFO     | src.optimize:run_optuna:121 - Best params: {'lgb_n_estimators': 2500, 'lgb_lr': 0.01647477394109053, 'lgb_depth': 7, 'lgb_leaves': 59, 'lgb_min_child': 33, 'lgb_subsample': 0.6831809216468459, 'lgb_colsample': 0.728034992108518, 'lgb_alpha': 0.8431013932082461, 'lgb_lambda': 0.0009962513222055108}
+2026-02-24 23:09:51.238 | INFO     | __main__:train:190 - STEP 3/6 — Train final regressors
+2026-02-24 23:09:51.240 | INFO     | src.optimize:train_final_regressors:138 - Training LightGBM regressor...
+2026-02-24 23:09:53.183 | INFO     | src.optimize:train_final_regressors:154 - Training XGBoost regressor...
+2026-02-24 23:10:03.773 | INFO     | src.optimize:train_final_regressors:165 - Training CatBoost regressor...
+2026-02-24 23:10:26.692 | INFO     | __main__:train:196 - STEP 4/6 — Hill Climbing weights (Val-C)
+2026-02-24 23:10:26.737 | INFO     | src.optimize:hill_climbing_weights:267 -   Single model [lgb]: score = 2.33365
+2026-02-24 23:10:26.738 | INFO     | src.optimize:hill_climbing_weights:267 -   Single model [xgb]: score = 2.26332
+2026-02-24 23:10:26.738 | INFO     | src.optimize:hill_climbing_weights:267 -   Single model [cat]: score = 2.23211
+2026-02-24 23:10:26.738 | INFO     | src.optimize:hill_climbing_weights:272 - Best single model: cat (score=2.23211)
+2026-02-24 23:10:26.755 | INFO     | src.optimize:hill_climbing_weights:314 -   Iter 1: +xgb w=0.360 → score=2.21661
+2026-02-24 23:10:26.771 | INFO     | src.optimize:hill_climbing_weights:314 -   Iter 2: +lgb w=0.110 → score=2.21464
+2026-02-24 23:10:26.786 | INFO     | src.optimize:hill_climbing_weights:314 -   Iter 3: +xgb w=-0.070 → score=2.21440
+2026-02-24 23:10:26.802 | INFO     | src.optimize:hill_climbing_weights:314 -   Iter 4: +lgb w=0.010 → score=2.21438
+2026-02-24 23:10:26.817 | INFO     | src.optimize:hill_climbing_weights:307 - Hill Climbing converged at iteration 4 (tol=1e-05)
+2026-02-24 23:10:26.818 | INFO     | src.optimize:hill_climbing_weights:334 - Final ensemble weights: {'lgb': np.float64(0.12652300000000094), 'xgb': np.float64(0.2700997200000006), 'cat': np.float64(0.6033772799999985)}
+2026-02-24 23:10:26.818 | INFO     | src.optimize:hill_climbing_weights:335 - Final ensemble score on Val-C: 2.21438
+2026-02-24 23:10:26.819 | INFO     | __main__:train:203 - STEP 5/6 — Evaluate on Test set
+2026-02-24 23:10:26.858 | INFO     | __main__:train:206 - Test RMSE=2.2335  R2=0.9210
+2026-02-24 23:10:26.859 | INFO     | __main__:train:209 - STEP 6/6 — MLflow logging & registration
+2026-02-24 23:10:26.991 | DEBUG    | src.utils:save_artifact:28 - Artifact saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\models\regression_ensemble.joblib
+2026-02-24 23:10:27.113 | DEBUG    | src.utils:save_artifact:28 - Artifact saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\models\regression_models.joblib
+2026-02-24 23:10:27.129 | INFO     | src.evaluate:full_evaluation_report:149 - Regression  RMSE=2.3560  R2=0.9121
+2026-02-24 23:10:27.719 | INFO     | src.evaluate:plot_predictions_vs_actual:111 - Predictions plot saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\reports\regression_predictions.png
+2026-02-24 23:13:56.402 | INFO     | __main__:train:151 - STEP 1/6 — Preprocessing
+2026-02-24 23:13:56.409 | INFO     | src.preprocessing:run_preprocessing:190 - ============================================================
+2026-02-24 23:13:56.409 | INFO     | src.preprocessing:run_preprocessing:191 - PREPROCESSING PIPELINE START
+2026-02-24 23:13:56.409 | INFO     | src.preprocessing:run_preprocessing:192 - ============================================================
+2026-02-24 23:13:56.526 | INFO     | src.preprocessing:run_preprocessing:196 - Loaded dataset: 20000 rows × 36 cols
+2026-02-24 23:13:56.672 | INFO     | src.preprocessing:run_preprocessing:202 - Reference snapshot saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\data\reference\reference_snapshot.parquet
+2026-02-24 23:13:56.689 | INFO     | src.preprocessing:run_preprocessing:210 - Feature engineering done
+2026-02-24 23:13:56.690 | INFO     | src.preprocessing:run_preprocessing:213 - Nested 5-partition split:
+2026-02-24 23:13:56.719 | INFO     | src.preprocessing:nested_split:75 -   Split train   : 11999 rows (60.0%)
+2026-02-24 23:13:56.719 | INFO     | src.preprocessing:nested_split:75 -   Split val_a   :  2000 rows (10.0%)
+2026-02-24 23:13:56.720 | INFO     | src.preprocessing:nested_split:75 -   Split val_b   :  2000 rows (10.0%)
+2026-02-24 23:13:56.721 | INFO     | src.preprocessing:nested_split:75 -   Split val_c   :  2001 rows (10.0%)
+2026-02-24 23:13:56.721 | INFO     | src.preprocessing:nested_split:75 -   Split test    :  2000 rows (10.0%)
+2026-02-24 23:13:56.735 | INFO     | src.preprocessing:fit_encoders:115 - OrdinalEncoder fit on: ['EmploymentStatus']
+2026-02-24 23:13:56.739 | INFO     | src.preprocessing:fit_encoders:123 - OneHotEncoder fit on: ['EducationLevel', 'MaritalStatus', 'HomeOwnershipStatus', 'LoanPurpose', 'NumberOfDependents']
+2026-02-24 23:13:56.818 | INFO     | src.preprocessing:fit_scaler:150 - StandardScaler fit on 55 numerical columns
+2026-02-24 23:13:56.871 | DEBUG    | src.utils:save_artifact:28 - Artifact saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\models\artifacts\encoders.joblib
+2026-02-24 23:13:56.871 | DEBUG    | src.utils:save_artifact:28 - Artifact saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\models\artifacts\scaler.joblib
+2026-02-24 23:13:56.871 | DEBUG    | src.utils:save_artifact:28 - Artifact saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\models\artifacts\num_cols.joblib
+2026-02-24 23:13:57.138 | INFO     | src.preprocessing:run_preprocessing:254 - Processed splits saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\data\processed
+2026-02-24 23:13:57.163 | INFO     | src.preprocessing:run_preprocessing:268 - PREPROCESSING COMPLETE
+2026-02-24 23:13:59.628 | INFO     | __main__:train:183 - STEP 2/6 — Optuna regression (Val-B)
+2026-02-24 23:17:43.790 | INFO     | src.optimize:run_optuna:120 - Optuna [regression] best value: 2.30751
+2026-02-24 23:17:43.796 | INFO     | src.optimize:run_optuna:121 - Best params: {'lgb_n_estimators': 2500, 'lgb_lr': 0.01647477394109053, 'lgb_depth': 7, 'lgb_leaves': 59, 'lgb_min_child': 33, 'lgb_subsample': 0.6831809216468459, 'lgb_colsample': 0.728034992108518, 'lgb_alpha': 0.8431013932082461, 'lgb_lambda': 0.0009962513222055108}
+2026-02-24 23:17:43.797 | INFO     | __main__:train:190 - STEP 3/6 — Train final regressors
+2026-02-24 23:17:43.801 | INFO     | src.optimize:train_final_regressors:138 - Training LightGBM regressor...
+2026-02-24 23:17:45.593 | INFO     | src.optimize:train_final_regressors:154 - Training XGBoost regressor...
+2026-02-24 23:17:57.366 | INFO     | src.optimize:train_final_regressors:165 - Training CatBoost regressor...
+2026-02-24 23:18:12.022 | INFO     | __main__:train:196 - STEP 4/6 — Hill Climbing weights (Val-C)
+2026-02-24 23:18:12.065 | INFO     | src.optimize:hill_climbing_weights:267 -   Single model [lgb]: score = 2.33365
+2026-02-24 23:18:12.067 | INFO     | src.optimize:hill_climbing_weights:267 -   Single model [xgb]: score = 2.26332
+2026-02-24 23:18:12.067 | INFO     | src.optimize:hill_climbing_weights:267 -   Single model [cat]: score = 2.23211
+2026-02-24 23:18:12.067 | INFO     | src.optimize:hill_climbing_weights:272 - Best single model: cat (score=2.23211)
+2026-02-24 23:18:12.084 | INFO     | src.optimize:hill_climbing_weights:314 -   Iter 1: +xgb w=0.360 → score=2.21661
+2026-02-24 23:18:12.098 | INFO     | src.optimize:hill_climbing_weights:314 -   Iter 2: +lgb w=0.110 → score=2.21464
+2026-02-24 23:18:12.113 | INFO     | src.optimize:hill_climbing_weights:314 -   Iter 3: +xgb w=-0.070 → score=2.21440
+2026-02-24 23:18:12.129 | INFO     | src.optimize:hill_climbing_weights:314 -   Iter 4: +lgb w=0.010 → score=2.21438
+2026-02-24 23:18:12.143 | INFO     | src.optimize:hill_climbing_weights:307 - Hill Climbing converged at iteration 4 (tol=1e-05)
+2026-02-24 23:18:12.145 | INFO     | src.optimize:hill_climbing_weights:334 - Final ensemble weights: {'lgb': np.float64(0.12652300000000094), 'xgb': np.float64(0.2700997200000006), 'cat': np.float64(0.6033772799999985)}
+2026-02-24 23:18:12.145 | INFO     | src.optimize:hill_climbing_weights:335 - Final ensemble score on Val-C: 2.21438
+2026-02-24 23:18:12.146 | INFO     | __main__:train:203 - STEP 5/6 — Evaluate on Test set
+2026-02-24 23:18:12.185 | INFO     | __main__:train:206 - Test RMSE=2.2335  R2=0.9210
+2026-02-24 23:18:12.186 | INFO     | __main__:train:209 - STEP 6/6 — MLflow logging & registration
+2026-02-24 23:18:12.318 | DEBUG    | src.utils:save_artifact:28 - Artifact saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\models\regression_ensemble.joblib
+2026-02-24 23:18:12.464 | DEBUG    | src.utils:save_artifact:28 - Artifact saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\models\regression_models.joblib
+2026-02-24 23:18:12.474 | INFO     | src.evaluate:full_evaluation_report:147 - Regression  RMSE=2.3560  R2=0.9121
+2026-02-24 23:18:12.990 | INFO     | src.evaluate:plot_predictions_vs_actual:111 - Predictions plot saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\reports\regression_predictions.png
+2026-02-24 23:18:14.706 | INFO     | src.evaluate:plot_shap_summary:88 - SHAP summary plot saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\reports\shap_summary.png
+2026-02-24 23:18:29.567 | INFO     | __main__:log_and_register:96 - Model registered in MLflow Registry as 'LoanRiskRegressor'
+2026-02-24 23:18:29.692 | INFO     | __main__:auto_promote:113 - First model promoted to Production (v1)
+2026-02-24 23:34:21.918 | INFO     | api.predict:get_models:64 - Loading models into cache...
+2026-02-24 23:34:24.731 | INFO     | api.predict:load_model_from_registry:41 - Loaded 'LoanRiskRegressor' v1 from MLflow Registry (Production)
+2026-02-24 23:34:24.775 | WARNING  | api.predict:load_model_from_registry:44 - MLflow Registry unavailable (RESOURCE_DOES_NOT_EXIST: Registered Model with name=LoanApprovalClassifier not found). Falling back to local joblib.
+2026-02-24 23:36:42.217 | INFO     | src.optimize:run_optuna:120 - Optuna [classification] best value: -0.99348
+2026-02-24 23:36:42.221 | INFO     | src.optimize:run_optuna:121 - Best params: {'lgb_n_est': 4000, 'lgb_lr': 0.04553064013732728, 'lgb_depth': 3, 'lgb_leaves': 142, 'lgb_min_child': 87, 'lgb_subsample': 0.7367553738374616, 'lgb_colsample': 0.645230851960635, 'lgb_alpha': 0.00010252876632515857, 'lgb_lambda': 0.00022329832704266696}
+2026-02-24 23:36:42.222 | INFO     | src.optimize:train_final_classifiers:183 - Training LightGBM classifier...
+2026-02-24 23:36:43.586 | INFO     | src.optimize:train_final_classifiers:198 - Training XGBoost classifier...
+2026-02-24 23:36:54.315 | INFO     | src.optimize:train_final_classifiers:208 - Training CatBoost classifier...
+2026-02-24 23:37:06.162 | INFO     | src.optimize:hill_climbing_weights:267 -   Single model [lgb]: score = -0.98955
+2026-02-24 23:37:06.164 | INFO     | src.optimize:hill_climbing_weights:267 -   Single model [xgb]: score = -0.99062
+2026-02-24 23:37:06.168 | INFO     | src.optimize:hill_climbing_weights:267 -   Single model [cat]: score = -0.99245
+2026-02-24 23:37:06.168 | INFO     | src.optimize:hill_climbing_weights:272 - Best single model: cat (score=-0.99245)
+2026-02-24 23:37:06.184 | INFO     | src.optimize:hill_climbing_weights:307 - Hill Climbing converged at iteration 0 (tol=1e-05)
+2026-02-24 23:37:06.186 | INFO     | src.optimize:hill_climbing_weights:334 - Final ensemble weights: {'lgb': 0.0, 'xgb': 0.0, 'cat': np.float64(1.0)}
+2026-02-24 23:37:06.186 | INFO     | src.optimize:hill_climbing_weights:335 - Final ensemble score on Val-C: -0.99245
+2026-02-24 23:37:06.253 | INFO     | __main__:train:265 - Test AUC=0.9937  F1=0.9261
+2026-02-24 23:37:06.327 | DEBUG    | src.utils:save_artifact:28 - Artifact saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\models\classification_ensemble.joblib
+2026-02-24 23:37:06.396 | DEBUG    | src.utils:save_artifact:28 - Artifact saved → C:\Users\abdou\OneDrive\Bureau\Loan_risk_mlOps\models\classification_models.joblib
+2026-02-24 23:37:06.484 | INFO     | src.evaluate:full_evaluation_report_clf:185 - Classification  AUC=0.9937  F1=0.9261
+2026-02-24 23:37:18.582 | INFO     | __main__:log_and_register:96 - Model registered in MLflow Registry as 'LoanApprovalClassifier'
+2026-02-24 23:37:18.628 | INFO     | __main__:train:290 - ============================================================
+2026-02-24 23:37:18.629 | INFO     | __main__:train:291 - TRAINING COMPLETE
+2026-02-24 23:37:18.629 | INFO     | __main__:train:292 -   Regression  RMSE : 2.2335
+2026-02-24 23:37:18.629 | INFO     | __main__:train:293 -   Classification AUC: 0.9937
+2026-02-24 23:37:18.629 | INFO     | __main__:train:294 - ============================================================

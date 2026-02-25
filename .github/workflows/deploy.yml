@@ -1,0 +1,58 @@
+name: 🚢 Deploy API
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["🔄 Retrain Models", "🚀 Train Models"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - run: pip install -r requirements.txt
+
+      - name: 📥 Download models
+        uses: actions/download-artifact@v4
+        with:
+          pattern: trained-models-*
+          merge-multiple: true
+          path: .
+        continue-on-error: true
+
+      - name: 🧪 Run API tests
+        run: pytest tests/test_api.py -v --tb=short
+        continue-on-error: false
+
+      - name: 🔍 Health check (local)
+        run: |
+          # Start API in background
+          python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 &
+          sleep 8
+          # Health check
+          curl -f http://localhost:8000/health || (echo "Health check FAILED" && exit 1)
+          echo "✅ Health check passed"
+          # Graceful shutdown
+          kill %1 2>/dev/null || true
+
+      - name: ✅ Deploy successful
+        run: |
+          echo "🚀 API validated and ready for local deployment"
+          echo "Run locally with: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload"
+          echo ""
+          echo "Available endpoints:"
+          echo "  GET  http://localhost:8000/health"
+          echo "  POST http://localhost:8000/predict/risk"
+          echo "  POST http://localhost:8000/predict/approval"
+          echo "  POST http://localhost:8000/predict/batch"
+          echo "  GET  http://localhost:8000/docs"

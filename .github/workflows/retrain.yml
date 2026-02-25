@@ -1,0 +1,65 @@
+name: 🔄 Retrain Models
+
+on:
+  schedule:
+    - cron: "0 2 * * 0"    # Chaque dimanche à 2h UTC
+  workflow_dispatch:
+    inputs:
+      trigger:
+        description: "Raison du réentraînement"
+        default: "manual"
+  workflow_call:
+    inputs:
+      trigger:
+        type: string
+        default: "drift_detected"
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - run: pip install -r requirements.txt
+
+      - name: 📥 Restore previous models (for comparison)
+        uses: actions/download-artifact@v4
+        with:
+          pattern: trained-models-*
+          merge-multiple: true
+          path: models_prev/
+        continue-on-error: true
+
+      - name: 🔧 Prepare directories
+        run: mkdir -p data/raw data/processed data/reference models/artifacts reports mlruns logs
+
+      - name: 🔄 Run retraining pipeline
+        run: |
+          python -m src.train \
+            --data "data/raw/Loan.csv" \
+            --trigger "${{ inputs.trigger || 'scheduled_retrain' }}"
+        env:
+          MLFLOW_TRACKING_URI: "sqlite:///mlruns/mlflow.db"
+
+      - name: 📤 Upload new models
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-models-${{ github.run_number }}
+          path: |
+            models/
+            reports/
+            mlruns/
+          retention-days: 30
+
+      - name: 🚀 Trigger deployment if model promoted
+        run: |
+          echo "Retrain complete — deployment workflow will check Model Registry"
+          # In production: check MLflow Registry for new Production model
+          # then trigger deploy.yml
