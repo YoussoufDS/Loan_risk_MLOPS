@@ -28,32 +28,17 @@ def get_cfg():
 
 def load_model_from_registry(registry_name: str, stage: str = "Production"):
     """Load model from MLflow Model Registry.
-    Skips registry if tracking URI is SQLite (CI/local without server).
+    Always uses local joblib to ensure feature compatibility.
+    MLflow Registry is used only for version tracking, not model loading.
     """
     import os
     cfg = get_cfg()
     tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", cfg["mlflow"]["tracking_uri"])
 
-    # Skip registry entirely if using SQLite — no server available
-    if tracking_uri.startswith("sqlite://"):
-        logger.info(f"SQLite tracking URI detected — skipping MLflow Registry, using local joblib.")
-        return None, None
-
-    mlflow.set_tracking_uri(tracking_uri)
-    client = MlflowClient()
-
-    try:
-        versions = client.get_latest_versions(registry_name, stages=[stage])
-        if not versions:
-            raise ValueError(f"No model in stage '{stage}' for '{registry_name}'")
-        model_uri = f"models:/{registry_name}/{stage}"
-        model = mlflow.sklearn.load_model(model_uri)
-        version = versions[0].version
-        logger.info(f"Loaded '{registry_name}' v{version} from MLflow Registry ({stage})")
-        return model, version
-    except Exception as e:
-        logger.warning(f"MLflow Registry unavailable ({e}). Falling back to local joblib.")
-        return None, None
+    # Skip registry entirely — always use local joblib for feature compatibility
+    # MLflow Registry models may have different feature schemas than local artifacts
+    logger.info(f"Using local joblib for {registry_name} (ensures feature compatibility)")
+    return None, None
 
 
 def load_preprocessing_artifacts() -> dict:
@@ -125,6 +110,17 @@ def preprocess_single(applicant_dict: dict) -> pd.DataFrame:
     # Drop target columns if accidentally present
     targets = [cfg["features"]["target_regression"], cfg["features"]["target_classification"]]
     df = df.drop(columns=[c for c in targets if c in df.columns], errors="ignore")
+
+    # Keep only columns the model was trained on
+    expected_cols = list(artifacts["num_cols"])
+    extra_cols = [c for c in df.columns if c not in expected_cols]
+    if extra_cols:
+        logger.warning(f"Dropping unexpected columns: {extra_cols}")
+        df = df.drop(columns=extra_cols)
+
+    # Reorder columns to match training order
+    df = df[expected_cols]
+    logger.info(f"Final features sent to model: {len(df.columns)} cols")
 
     return df
 
