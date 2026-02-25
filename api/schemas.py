@@ -43,7 +43,9 @@ class LoanApplicant(BaseModel):
     MonthlyLoanPayment: float            = Field(..., ge=0)
     TotalDebtToIncomeRatio: float        = Field(..., ge=0)
 
-    model_config = {"extra": "allow"}
+    ApplicationDate: Optional[str] = Field(None, description="Format YYYY-MM-DD")
+
+    model_config = {"extra": "forbid"}  # reject unknown fields
 
 
 class RiskPredictionResponse(BaseModel):
