@@ -64,7 +64,12 @@ class WeightedEnsemble:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def setup_mlflow(cfg: dict) -> None:
-    mlflow.set_tracking_uri(cfg["mlflow"]["tracking_uri"])
+    import os
+    # Priorité : variable d'environnement > config.yaml
+    # Permet aux GitHub Actions d'utiliser SQLite sans toucher config.yaml
+    uri = os.environ.get("MLFLOW_TRACKING_URI", cfg["mlflow"]["tracking_uri"])
+    mlflow.set_tracking_uri(uri)
+    logger.info(f"MLflow tracking URI: {uri}")
 
 
 def log_and_register(

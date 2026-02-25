@@ -1,28 +1,41 @@
-name: 🚢 Deploy API
+name: 🚢 Deploy & Validate API
 
 on:
-  workflow_dispatch:
+  # Déclenché automatiquement après Train ou Retrain
   workflow_run:
-    workflows: ["🔄 Retrain Models", "🚀 Train Models"]
+    workflows: ["🚀 Train Models", "🔄 Retrain Models"]
     types: [completed]
     branches: [main]
+  # Déclenchement manuel possible
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    # Ne s'exécute QUE si le workflow précédent a réussi
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: 🐍 Python 3.11
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
-      - run: pip install -r requirements.txt
+      - name: 📦 Install dependencies
+        run: pip install -r requirements.txt
 
-      - name: 📥 Download models
+      - name: 🗂️ Directories
+        run: mkdir -p data/raw models/artifacts reports mlruns logs
+
+      # Récupérer les modèles du dernier train/retrain
+      - name: 📥 Download latest models
         uses: actions/download-artifact@v4
         with:
           pattern: trained-models-*
@@ -30,29 +43,58 @@ jobs:
           path: .
         continue-on-error: true
 
-      - name: 🧪 Run API tests
-        run: pytest tests/test_api.py -v --tb=short
-        continue-on-error: false
+      # Tests unitaires
+      - name: 🧪 Run unit tests
+        run: pytest tests/ -v --tb=short
 
-      - name: 🔍 Health check (local)
+      # Démarrer l'API et vérifier
+      - name: 🔍 API health check
         run: |
-          # Start API in background
-          python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 &
-          sleep 8
-          # Health check
-          curl -f http://localhost:8000/health || (echo "Health check FAILED" && exit 1)
-          echo "✅ Health check passed"
-          # Graceful shutdown
-          kill %1 2>/dev/null || true
+          uvicorn api.main:app --host 0.0.0.0 --port 8000 &
+          API_PID=$!
 
-      - name: ✅ Deploy successful
+          echo "⏳ Attente démarrage API..."
+          for i in $(seq 1 15); do
+            if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+              echo "✅ API prête après ${i}x2s"
+              break
+            fi
+            sleep 2
+          done
+
+          # Vérifier /health
+          HEALTH=$(curl -sf http://localhost:8000/health)
+          echo "Health: $HEALTH"
+
+          # Vérifier /model/info
+          INFO=$(curl -sf http://localhost:8000/model/info)
+          echo "Model info: $INFO"
+
+          kill $API_PID 2>/dev/null || true
+
+      # Résumé final du pipeline complet
+      - name: ✅ Pipeline summary
         run: |
-          echo "🚀 API validated and ready for local deployment"
-          echo "Run locally with: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload"
-          echo ""
-          echo "Available endpoints:"
-          echo "  GET  http://localhost:8000/health"
-          echo "  POST http://localhost:8000/predict/risk"
-          echo "  POST http://localhost:8000/predict/approval"
-          echo "  POST http://localhost:8000/predict/batch"
-          echo "  GET  http://localhost:8000/docs"
+          echo "## 🎉 Pipeline MLOps Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Étape | Statut |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Train / Retrain | ✅ Succès |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests pytest | ✅ Passés |" >> $GITHUB_STEP_SUMMARY
+          echo "| API Health check | ✅ OK |" >> $GITHUB_STEP_SUMMARY
+          echo "| Déploiement local | ✅ Validé |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Trigger:** ${{ github.event.workflow_run.name || 'Manuel' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Run:** #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+
+  # Job de notification si deploy échoue
+  notify-failure:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: failure()
+    steps:
+      - name: ❌ Notify failure
+        run: |
+          echo "## ❌ Pipeline Failed" >> $GITHUB_STEP_SUMMARY
+          echo "Le déploiement a échoué après Train/Retrain." >> $GITHUB_STEP_SUMMARY
+          echo "Vérifier les logs du job 'deploy' ci-dessus." >> $GITHUB_STEP_SUMMARY
