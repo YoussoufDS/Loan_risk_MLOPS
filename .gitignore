@@ -47,3 +47,19 @@ mlruns/optuna_study.db
 # ── Artefacts temporaires ────────────────────────────────────────────────────
 *.log
 *.tmp
+
+# CatBoost
+catboost_info/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Modèles (trop lourds, générés à l'entraînement)
+models/
+
+# Logs
+logs/
+
+Loan_risk_MLOPS/
