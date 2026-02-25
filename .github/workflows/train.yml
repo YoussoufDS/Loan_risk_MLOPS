@@ -1,12 +1,7 @@
 name: 🚀 Train Models
 
 on:
-  workflow_dispatch:           # Manuel — bouton GitHub
-    inputs:
-      data_path:
-        description: "Chemin vers le CSV (relatif au repo)"
-        default: "data/raw/Loan.csv"
-        required: false
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
@@ -19,7 +14,7 @@ jobs:
     timeout-minutes: 120
 
     steps:
-      - name: 📥 Checkout
+      - name: 📥 Checkout repo
         uses: actions/checkout@v4
 
       - name: 🐍 Setup Python 3.11
@@ -29,38 +24,42 @@ jobs:
           cache: "pip"
 
       - name: 📦 Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: 🔧 Create directories
-        run: mkdir -p data/raw data/processed data/reference models/artifacts reports mlruns logs
-
-      # If data is stored in GitHub Releases or passed as artifact
-      - name: 📊 Download dataset (if not in repo)
         run: |
-          if [ ! -f "${{ github.event.inputs.data_path || 'data/raw/Loan.csv' }}" ]; then
-            echo "Dataset not found — please upload it to data/raw/Loan.csv"
-            exit 1
-          fi
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🗂️ Create directories
+        run: |
+          mkdir -p data/processed data/reference
+          mkdir -p models/artifacts reports/drift mlruns logs
+
+      - name: ✅ Verify dataset
+        run: |
+          ls -lh data/raw/
+          python -c "import pandas as pd; df=pd.read_csv('data/raw/Loan.csv'); print(f'Dataset OK: {df.shape[0]} rows x {df.shape[1]} cols')"
 
       - name: 🚂 Run training pipeline
-        run: |
-          python -m src.train \
-            --data "${{ github.event.inputs.data_path || 'data/raw/Loan.csv' }}" \
-            --trigger "github_actions_manual"
+        run: python -m src.train --data data/raw/Loan.csv --trigger "github_actions"
         env:
           MLFLOW_TRACKING_URI: "sqlite:///mlruns/mlflow.db"
+          # Force artifact root to relative path — prevents Windows path contamination
+          MLFLOW_ARTIFACT_ROOT: "./mlruns/artifacts"
 
-      - name: 📤 Upload models as artifacts
+      - name: 🧪 Run tests
+        run: pytest tests/ -v --tb=short
+
+      - name: 📤 Upload models & reports
         uses: actions/upload-artifact@v4
         with:
           name: trained-models-${{ github.run_number }}
           path: |
             models/
             reports/
-            mlruns/
+            mlruns/mlflow.db
           retention-days: 30
 
-      - name: ✅ Training summary
+      - name: ✅ Summary
         run: |
-          echo "Training complete — Run #${{ github.run_number }}"
-          ls -lh models/
+          echo "## Training Complete 🎉" >> $GITHUB_STEP_SUMMARY
+          echo "- Run: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Trigger: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY

@@ -4,15 +4,11 @@ on:
   schedule:
     - cron: "0 6 * * *"    # Chaque jour à 6h UTC
   workflow_dispatch:
-    inputs:
-      current_data_path:
-        description: "Chemin vers les nouvelles données"
-        default: "data/raw/Loan.csv"
-        required: false
 
 jobs:
   drift-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     outputs:
       retrain_needed: ${{ steps.drift.outputs.retrain_needed }}
 
@@ -26,12 +22,17 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: 📥 Download latest models artifact
+      - name: 🗂️ Directories
+        run: mkdir -p data/processed data/reference reports/drift mlruns logs
+
+      # Restaurer le snapshot de référence du dernier entraînement
+      - name: 📥 Restore reference snapshot & models
         uses: actions/download-artifact@v4
         with:
-          name: trained-models-${{ github.run_number }}
+          pattern: trained-models-*
+          merge-multiple: true
           path: .
-        continue-on-error: true  # OK si pas encore de modèle
+        continue-on-error: true
 
       - name: 🔍 Run drift detection
         id: drift
@@ -40,11 +41,13 @@ jobs:
           import json, sys
           sys.path.insert(0, '.')
           from src.drift_detection import detect_drift
-          result = detect_drift('${{ github.event.inputs.current_data_path || 'data/raw/Loan.csv' }}')
-          print(f'Drifted features: {result[\"drifted_features\"]}')
-          print(f'Retrain needed: {result[\"retrain_needed\"]}')
-          # Write GitHub output
-          with open('$GITHUB_OUTPUT', 'a') as f:
+          result = detect_drift('data/raw/Loan.csv', 'reports/drift/')
+          print(f'Features driftees : {result[\"drifted_features\"]}')
+          print(f'Retrain needed    : {result[\"retrain_needed\"]}')
+          with open('drift_result.json', 'w') as f:
+              json.dump(result, f, indent=2, default=str)
+          import os
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
               f.write(f'retrain_needed={str(result[\"retrain_needed\"]).lower()}\n')
           "
 
@@ -52,19 +55,32 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: drift-report-${{ github.run_id }}
-          path: reports/drift/
+          path: |
+            reports/drift/
+            drift_result.json
           retention-days: 90
 
-      - name: 🔔 Notify if retrain needed
-        if: steps.drift.outputs.retrain_needed == 'true'
+      - name: 📋 Drift summary
         run: |
-          echo "⚠️ DRIFT DETECTED — Triggering retrain workflow"
-          echo "Retrain needed: true"
+          echo "## Drift Detection 🔍" >> $GITHUB_STEP_SUMMARY
+          python3 -c "
+          import json
+          with open('drift_result.json') as f:
+              d = json.load(f)
+          print(f'- Features analysees: {d[\"n_features_checked\"]}')
+          print(f'- Features driftees: {d[\"n_drifted_features\"]}')
+          print(f'- PSI moyen: {d[\"overall_mean_psi\"]:.4f}')
+          print(f'- Retrain needed: **{d[\"retrain_needed\"]}**')
+          " >> $GITHUB_STEP_SUMMARY
 
-  # Déclenche le réentraînement si drift détecté
+      - name: 🔔 Alert if drift detected
+        if: steps.drift.outputs.retrain_needed == 'true'
+        run: echo "⚠️ DRIFT DETECTE — Declenchement du reentrainement automatique"
+
   trigger-retrain:
     needs: drift-check
     if: needs.drift-check.outputs.retrain_needed == 'true'
     uses: ./.github/workflows/retrain.yml
     with:
       trigger: "drift_detected"
+    secrets: inherit

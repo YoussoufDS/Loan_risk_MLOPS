@@ -1,0 +1,49 @@
+# ── Données et modèles (trop lourds pour Git) ────────────────────────────────
+data/processed/
+data/reference/
+models/
+mlruns/
+logs/
+reports/
+
+# ── Dataset brut (à gérer séparément — voir README) ──────────────────────────
+# data/raw/Loan.csv   ← décommenter si le fichier est < 100MB
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# ── Environnements conda/pip ─────────────────────────────────────────────────
+.conda/
+*.pkl
+
+# ── VS Code ──────────────────────────────────────────────────────────────────
+.vscode/
+*.code-workspace
+
+# ── Jupyter ──────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Optuna DB (généré à l'exécution) ─────────────────────────────────────────
+mlruns/optuna_study.db
+
+# ── Artefacts temporaires ────────────────────────────────────────────────────
+*.log
+*.tmp

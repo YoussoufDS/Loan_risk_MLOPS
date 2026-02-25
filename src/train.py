@@ -66,10 +66,15 @@ class WeightedEnsemble:
 def setup_mlflow(cfg: dict) -> None:
     import os
     # Priorité : variable d'environnement > config.yaml
-    # Permet aux GitHub Actions d'utiliser SQLite sans toucher config.yaml
     uri = os.environ.get("MLFLOW_TRACKING_URI", cfg["mlflow"]["tracking_uri"])
     mlflow.set_tracking_uri(uri)
     logger.info(f"MLflow tracking URI: {uri}")
+
+    # Force artifact root to avoid Windows absolute paths on Linux runners
+    artifact_root = os.environ.get("MLFLOW_ARTIFACT_ROOT")
+    if artifact_root:
+        os.environ["MLFLOW_ARTIFACT_ROOT"] = artifact_root
+        logger.info(f"MLflow artifact root: {artifact_root}")
 
 
 def log_and_register(
@@ -89,10 +94,18 @@ def log_and_register(
     for artifact_path in artifacts.values():
         if artifact_path is None:
             continue
-        # Convertir en Path absolu depuis ROOT (évite les chemins Windows sur Linux)
+        # Résoudre depuis le répertoire courant (pas depuis ROOT)
+        # Cela évite d'hériter de chemins Windows absolus
         p = Path(artifact_path)
-        if not p.is_absolute():
-            p = ROOT / p
+        if p.is_absolute():
+            # Sur Linux runner, un chemin absolu Windows comme C:\... est invalide
+            # On reconstruit depuis le cwd
+            try:
+                p = Path.cwd() / p.relative_to(ROOT)
+            except (ValueError, Exception):
+                p = Path.cwd() / "reports" / p.name
+        else:
+            p = Path.cwd() / p
         if p.exists():
             mlflow.log_artifact(str(p))
         else:

@@ -8,6 +8,7 @@ on:
       trigger:
         description: "Raison du réentraînement"
         default: "manual"
+        type: string
   workflow_call:
     inputs:
       trigger:
@@ -20,14 +21,20 @@ jobs:
     timeout-minutes: 180
 
     steps:
-      - uses: actions/checkout@v4
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: 🐍 Python 3.11
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
           cache: "pip"
 
-      - run: pip install -r requirements.txt
+      - name: 📦 Install
+        run: pip install -r requirements.txt
+
+      - name: 🗂️ Directories
+        run: mkdir -p data/processed data/reference models/artifacts reports/drift mlruns logs
 
       - name: 📥 Restore previous models (for comparison)
         uses: actions/download-artifact@v4
@@ -37,16 +44,17 @@ jobs:
           path: models_prev/
         continue-on-error: true
 
-      - name: 🔧 Prepare directories
-        run: mkdir -p data/raw data/processed data/reference models/artifacts reports mlruns logs
-
-      - name: 🔄 Run retraining pipeline
+      - name: ✅ Verify dataset
         run: |
-          python -m src.train \
-            --data "data/raw/Loan.csv" \
-            --trigger "${{ inputs.trigger || 'scheduled_retrain' }}"
+          python -c "import pandas as pd; df=pd.read_csv('data/raw/Loan.csv'); print(f'Dataset OK: {df.shape[0]} rows')"
+
+      - name: 🔄 Retrain
+        run: python -m src.train --data data/raw/Loan.csv --trigger "${{ inputs.trigger || 'scheduled_retrain' }}"
         env:
           MLFLOW_TRACKING_URI: "sqlite:///mlruns/mlflow.db"
+
+      - name: 🧪 Tests
+        run: pytest tests/ -v --tb=short
 
       - name: 📤 Upload new models
         uses: actions/upload-artifact@v4
@@ -55,11 +63,11 @@ jobs:
           path: |
             models/
             reports/
-            mlruns/
+            mlruns/mlflow.db
           retention-days: 30
 
-      - name: 🚀 Trigger deployment if model promoted
+      - name: ✅ Summary
         run: |
-          echo "Retrain complete — deployment workflow will check Model Registry"
-          # In production: check MLflow Registry for new Production model
-          # then trigger deploy.yml
+          echo "## Retrain Complete 🔄" >> $GITHUB_STEP_SUMMARY
+          echo "- Trigger: ${{ inputs.trigger || 'scheduled' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Run: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
