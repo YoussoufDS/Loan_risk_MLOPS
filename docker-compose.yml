@@ -1,0 +1,95 @@
+version: "3.9"
+
+# ── Loan Risk MLOps — Docker Compose ─────────────────────────────────────────
+# Services:
+#   mlflow     → MLflow tracking server  (port 5000)
+#   api        → FastAPI inference API   (port 8000)
+#   streamlit  → Streamlit dashboard     (port 8501)
+#
+# Usage:
+#   docker-compose up --build          # Build & start all services
+#   docker-compose up api              # Start API only
+#   docker-compose down                # Stop all services
+#   docker-compose logs -f api         # Follow API logs
+
+services:
+
+  # ── MLflow Tracking Server ──────────────────────────────────────────────────
+  mlflow:
+    image: python:3.11-slim
+    container_name: loan-mlflow
+    working_dir: /mlflow
+    command: >
+      bash -c "pip install mlflow --quiet &&
+               mlflow server
+               --backend-store-uri sqlite:///mlruns/mlflow.db
+               --artifacts-destination ./mlruns/artifacts
+               --host 0.0.0.0
+               --port 5000"
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow/mlruns
+    networks:
+      - loan-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  # ── FastAPI Inference API ───────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: loan-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models          # Mount trained models
+      - ./mlruns:/app/mlruns          # Mount MLflow artifacts
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - PYTHONPATH=/app
+    networks:
+      - loan-net
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  # ── Streamlit Dashboard ─────────────────────────────────────────────────────
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    container_name: loan-streamlit
+    ports:
+      - "8501:8501"
+    environment:
+      - PYTHONPATH=/app
+    networks:
+      - loan-net
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+# ── Volumes ───────────────────────────────────────────────────────────────────
+volumes:
+  mlflow_data:
+    driver: local
+
+# ── Networks ──────────────────────────────────────────────────────────────────
+networks:
+  loan-net:
+    driver: bridge
